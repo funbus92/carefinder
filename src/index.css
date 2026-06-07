@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import 'mapbox-gl/dist/mapbox-gl.css';
+@import 'leaflet/dist/leaflet.css';
 
 @theme {
   --color-primary-50: #eff6ff;
@@ -18,8 +18,8 @@ body {
   @apply bg-gray-50 text-gray-900 antialiased;
 }
 
-.mapboxgl-popup-content {
-  @apply rounded-lg shadow-lg p-3;
+.leaflet-popup-content {
+  @apply rounded-lg text-sm;
 }
 
 .prose h1,

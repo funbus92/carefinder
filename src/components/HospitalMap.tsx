@@ -1,8 +1,6 @@
 import { useEffect, useRef } from 'react'
-import mapboxgl from 'mapbox-gl'
+import L from 'leaflet'
 import type { Hospital } from '../lib/types'
-
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? ''
 
 interface HospitalMapProps {
   hospitals: Hospital[]
@@ -18,102 +16,91 @@ export function HospitalMap({
   onHospitalClick,
 }: HospitalMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<mapboxgl.Map | null>(null)
-  const markersRef = useRef<mapboxgl.Marker[]>([])
+  const mapRef = useRef<L.Map | null>(null)
+  const markersLayerRef = useRef<L.LayerGroup | null>(null)
+  const radiusLayerRef = useRef<L.Circle | null>(null)
 
   useEffect(() => {
-    if (!mapContainer.current || !MAPBOX_TOKEN) return
+    if (!mapContainer.current) return
 
-    mapboxgl.accessToken = MAPBOX_TOKEN
-
-    const defaultCenter: [number, number] = center
-      ? [center.lng, center.lat]
-      : [3.3792, 6.5244]
+    const defaultCenter: L.LatLngExpression = center
+      ? [center.lat, center.lng]
+      : [6.5244, 3.3792]
 
     if (!mapRef.current) {
-      mapRef.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
+      mapRef.current = L.map(mapContainer.current, {
         center: defaultCenter,
-        zoom: center ? 11 : 5,
+        zoom: center ? 11 : 6,
       })
-      mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(mapRef.current)
+
+      markersLayerRef.current = L.layerGroup().addTo(mapRef.current)
     } else if (center) {
-      mapRef.current.flyTo({ center: defaultCenter, zoom: 11 })
+      mapRef.current.setView(defaultCenter, 11)
     }
 
-    markersRef.current.forEach((m) => m.remove())
-    markersRef.current = []
+    markersLayerRef.current?.clearLayers()
 
     hospitals.forEach((h) => {
-      const el = document.createElement('div')
-      el.className =
-        'h-4 w-4 rounded-full border-2 border-white bg-primary-600 shadow-md cursor-pointer'
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([h.longitude, h.latitude])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 12 }).setHTML(
-            `<strong>${h.name}</strong><br/><span style="font-size:12px;color:#666">${h.city}</span>`,
-          ),
+      const marker = L.circleMarker([h.latitude, h.longitude], {
+        radius: 8,
+        fillColor: '#2563eb',
+        color: '#ffffff',
+        weight: 2,
+        fillOpacity: 1,
+      })
+        .bindPopup(
+          `<strong>${escapeHtml(h.name)}</strong><br/>
+           <span style="font-size:12px;color:#666">${escapeHtml(h.city)}</span>`,
         )
-        .addTo(mapRef.current!)
+        .addTo(markersLayerRef.current!)
 
       if (onHospitalClick) {
-        el.addEventListener('click', () => onHospitalClick(h))
+        marker.on('click', () => onHospitalClick(h))
       }
-
-      markersRef.current.push(marker)
     })
 
+    if (radiusLayerRef.current) {
+      radiusLayerRef.current.remove()
+      radiusLayerRef.current = null
+    }
+
     if (center && radiusKm && mapRef.current) {
-      const sourceId = 'radius-circle'
-      const layerId = 'radius-circle-fill'
-
-      if (mapRef.current.getSource(sourceId)) {
-        mapRef.current.removeLayer(layerId)
-        mapRef.current.removeSource(sourceId)
-      }
-
-      const circle = createGeoCircle(center.lng, center.lat, radiusKm)
-      mapRef.current.addSource(sourceId, {
-        type: 'geojson',
-        data: { type: 'Feature', geometry: circle, properties: {} },
-      })
-      mapRef.current.addLayer({
-        id: layerId,
-        type: 'fill',
-        source: sourceId,
-        paint: { 'fill-color': '#3b82f6', 'fill-opacity': 0.1 },
-      })
+      radiusLayerRef.current = L.circle([center.lat, center.lng], {
+        radius: radiusKm * 1000,
+        color: '#3b82f6',
+        fillColor: '#3b82f6',
+        fillOpacity: 0.1,
+        weight: 1,
+      }).addTo(mapRef.current)
     }
 
     return () => {
-      markersRef.current.forEach((m) => m.remove())
+      markersLayerRef.current?.clearLayers()
     }
   }, [hospitals, center, radiusKm, onHospitalClick])
 
-  if (!MAPBOX_TOKEN) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-lg bg-gray-100 text-sm text-gray-500">
-        Set VITE_MAPBOX_TOKEN to enable the map
-      </div>
-    )
-  }
+  useEffect(() => {
+    return () => {
+      mapRef.current?.remove()
+      mapRef.current = null
+      markersLayerRef.current = null
+      radiusLayerRef.current = null
+    }
+  }, [])
 
-  return <div ref={mapContainer} className="h-full w-full rounded-lg" />
+  return <div ref={mapContainer} className="h-full w-full rounded-lg z-0" />
 }
 
-function createGeoCircle(lng: number, lat: number, radiusKm: number) {
-  const points = 64
-  const coords: [number, number][] = []
-  const distanceX = radiusKm / (111.32 * Math.cos((lat * Math.PI) / 180))
-  const distanceY = radiusKm / 110.574
-
-  for (let i = 0; i < points; i++) {
-    const angle = (i / points) * 2 * Math.PI
-    coords.push([lng + distanceX * Math.cos(angle), lat + distanceY * Math.sin(angle)])
-  }
-  coords.push(coords[0])
-
-  return { type: 'Polygon' as const, coordinates: [coords] }
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }

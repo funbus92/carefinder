@@ -15,3 +15,8 @@ test('login page is accessible for review submission', async ({ page }) => {
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible()
 })
+
+test('register page is accessible for new users', async ({ page }) => {
+  await page.goto('/register')
+  await expect(page.getByRole('heading', { name: /create account/i })).toBeVisible()
+})

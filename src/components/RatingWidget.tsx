@@ -127,8 +127,12 @@ export function RatingWidget({
         </form>
       ) : (
         <p className="text-sm text-gray-500">
+          <a href="/register" className="text-primary-600 hover:underline">
+            Create an account
+          </a>{' '}
+          or{' '}
           <a href="/login" className="text-primary-600 hover:underline">
-            Sign in
+            sign in
           </a>{' '}
           to leave a rating and review.
         </p>

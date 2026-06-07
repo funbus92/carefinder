@@ -9,12 +9,18 @@ import type { User, Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import type { UserRole } from '../lib/types'
 
+interface AuthResult {
+  error: string | null
+  needsEmailConfirmation?: boolean
+}
+
 interface AuthContextValue {
   user: User | null
   session: Session | null
   role: UserRole | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>
+  signIn: (email: string, password: string) => Promise<AuthResult>
+  signUp: (email: string, password: string) => Promise<AuthResult>
   signOut: () => Promise<void>
 }
 
@@ -66,9 +72,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<AuthResult> => {
+    if (!isSupabaseConfigured()) {
+      return { error: 'Supabase is not configured. Add your env variables to sign in.' }
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error: error?.message ?? null }
+  }
+
+  const signUp = async (email: string, password: string): Promise<AuthResult> => {
+    if (!isSupabaseConfigured()) {
+      return { error: 'Supabase is not configured. Add your env variables to register.' }
+    }
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) return { error: error.message }
+
+    const needsEmailConfirmation = !data.session
+    return { error: null, needsEmailConfirmation }
   }
 
   const signOut = async () => {
@@ -77,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   )

@@ -43,13 +43,21 @@ export function Navbar() {
               Sign out
             </button>
           ) : (
-            <Link
-              to="/login"
-              className="flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
-            >
-              <LogIn className="h-4 w-4" />
-              Sign in
-            </Link>
+            <>
+              <Link
+                to="/register"
+                className="text-sm font-medium text-gray-600 hover:text-primary-600"
+              >
+                Register
+              </Link>
+              <Link
+                to="/login"
+                className="flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
+              >
+                <LogIn className="h-4 w-4" />
+                Sign in
+              </Link>
+            </>
           )}
         </nav>
       </div>

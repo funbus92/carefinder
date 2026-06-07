@@ -4,7 +4,7 @@ A civic health tool that helps Nigerians find, export, and share hospital inform
 
 ## Features
 
-- **Hospital Search & Map** — Search by name, city, or LGA; filter by specialty and ownership; radius search with geolocation; Mapbox interactive map
+- **Hospital Search & Map** — Search by name, city, or LGA; filter by specialty and ownership; radius search with geolocation; Leaflet + OpenStreetMap (free, no API key)
 - **CSV Export** — Client-side export with selectable columns via PapaParse
 - **Share** — Human-readable shareable URLs and email sharing via Resend
 - **Role-Based Auth** — Supabase Auth with RLS; admin-only writes; invite-only admin registration
@@ -18,7 +18,7 @@ A civic health tool that helps Nigerians find, export, and share hospital inform
 | Frontend | React + TypeScript + Tailwind CSS |
 | Backend / DB | Supabase (Postgres + PostGIS) |
 | Auth | Supabase Auth + RLS |
-| Map | Mapbox GL JS |
+| Map | Leaflet + OpenStreetMap |
 | CSV | PapaParse |
 | Email | Resend API |
 | Markdown | @uiw/react-md-editor |
@@ -48,8 +48,6 @@ The app runs in **demo mode** with mock hospital data when Supabase is not confi
 |----------|-------------|
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `VITE_MAPBOX_TOKEN` | Mapbox access token |
-
 ## Scripts
 
 | Command | Description |

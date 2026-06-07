@@ -32,3 +32,16 @@ export const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   content: z.string().max(1000).optional(),
 })
+
+export const signUpSchema = z
+  .object({
+    email: z.string().email('Enter a valid email address'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
+
+export type SignUpFormData = z.infer<typeof signUpSchema>
